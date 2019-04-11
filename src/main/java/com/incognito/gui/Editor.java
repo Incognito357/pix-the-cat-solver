@@ -2,7 +2,8 @@ package com.incognito.gui;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.incognito.models.CellType;
+import com.incognito.models.Cell;
+import com.incognito.models.enums.CellType;
 import com.incognito.models.Grid;
 
 import javax.swing.DefaultComboBoxModel;
@@ -50,7 +51,7 @@ public class Editor extends JFrame {
 
     private NameDialog dlgName = new NameDialog();
     private DefaultListModel<String> lstLevelsModel = new DefaultListModel<>();
-    private Map<String, Grid<CellType>> levels = new LinkedHashMap<>();
+    private Map<String, Grid<Cell>> levels = new LinkedHashMap<>();
     private ObjectMapper objectMapper = new ObjectMapper();
 
     public static void main(String[] args) {
@@ -76,20 +77,10 @@ public class Editor extends JFrame {
     }
 
     private void createUIComponents() {
-        String[] items = new String[CellType.values().length - 6];
+        String[] items = new String[CellType.values().length];
         int i = 0;
-        boolean portal = false;
-        boolean curve = false;
         for (CellType cellType : CellType.values()) {
-            if (cellType.name().contains("PORTAL") && !portal) {
-                portal = true;
-                items[i++] = "Portal";
-            } else if (cellType.name().contains("CURVE") && !curve) {
-                curve = true;
-                items[i++] = "Curve";
-            } else if (!cellType.isRotateable()) {
-                items[i++] = capitalizeFully(cellType.name(), new char[]{'_'}).replace("_", " ");
-            }
+            items[i++] = capitalizeFully(cellType.name(), new char[]{'_'}).replace("_", " ");
         }
 
         cmbCells = new JComboBox(items);
@@ -104,15 +95,9 @@ public class Editor extends JFrame {
         numWidth.addChangeListener(e -> pnlEditor.setGridWidth((int) numWidth.getValue()));
         numHeight.addChangeListener(e -> pnlEditor.setGridHeight((int) numHeight.getValue()));
         cmbCells.addActionListener(e -> {
-                    String val = ((String) cmbCells.getSelectedItem()).toUpperCase();
-                    if (val.equals("PORTAL")) {
-                        pnlEditor.setDrawMode(CellType.PORTAL_UP);
-                    } else if (val.equals("CURVE")) {
-                        pnlEditor.setDrawMode(CellType.CURVE_TR);
-                    } else {
-                        pnlEditor.setDrawMode(CellType.valueOf((val.replace(' ', '_'))));
-                    }
-                });
+            String val = ((String) cmbCells.getSelectedItem()).toUpperCase();
+            pnlEditor.setDrawMode(CellType.valueOf((val.replace(' ', '_'))));
+        });
         cmbMode.addActionListener(e -> pnlEditor.setClickMode((EditorPanel.ClickMode.valueOf(((String) cmbMode.getSelectedItem()).toUpperCase()))));
         btnNew.addActionListener(e -> {
             dlgName.setLocationRelativeTo(this);
@@ -124,16 +109,16 @@ public class Editor extends JFrame {
                         levels.put(lstLevelsModel.get(lstLevels.getSelectedIndex()), pnlEditor.getGrid());
                     }
                     lstLevelsModel.addElement(name);
-                    Grid<CellType> g = new Grid<>();
-                    List<CellType> row = new ArrayList<>();
+                    Grid<Cell> g = new Grid<>();
+                    List<Cell> row = new ArrayList<>();
                     for (int x = 0; x < EditorPanel.DEFAULT_WIDTH; x++) {
-                        row.add(CellType.EMPTY);
+                        row.add(new Cell(CellType.EMPTY));
                     }
                     for (int y = 0; y < EditorPanel.DEFAULT_HEIGHT; y++) {
                         g.addRow(row);
                     }
                     levels.put(name, g);
-                    pnlEditor.setGrid(g);
+                    pnlEditor.setGrid(g, name);
                     numWidth.setValue(g.getWidth());
                     numHeight.setValue(g.getHeight());
                     lstLevels.setSelectedIndex(lstLevelsModel.size() - 1);
@@ -167,8 +152,8 @@ public class Editor extends JFrame {
                     Map<String, Map<String, Object>> map = objectMapper.readValue(in, LinkedHashMap.class);
                     map.forEach((k, v) -> {
                         lstLevelsModel.addElement(k);
-                        Grid<CellType> g = new Grid<>();
-                        g.setGrid(objectMapper.convertValue(v.get("data"), new TypeReference<List<List<CellType>>>() {
+                        Grid<Cell> g = new Grid<>();
+                        g.setGrid(objectMapper.convertValue(v.get("data"), new TypeReference<List<List<Cell>>>() {
                         }));
                         levels.put(k, g);
                     });
@@ -181,8 +166,9 @@ public class Editor extends JFrame {
         lstLevels.addListSelectionListener(e -> {
             int index = lstLevels.getSelectedIndex();
             if (index != -1) {
-                Grid g = levels.get(lstLevelsModel.get(index));
-                pnlEditor.setGrid(g);
+                String name = lstLevelsModel.get(index);
+                Grid<Cell> g = levels.get(name);
+                pnlEditor.setGrid(g, name);
                 numWidth.setValue(g.getWidth());
                 numHeight.setValue(g.getHeight());
             }

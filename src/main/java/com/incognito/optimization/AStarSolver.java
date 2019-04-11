@@ -1,7 +1,8 @@
 package com.incognito.optimization;
 
-import com.incognito.models.CellType;
-import com.incognito.models.Direction;
+import com.incognito.models.Cell;
+import com.incognito.models.enums.CellType;
+import com.incognito.models.enums.Direction;
 import com.incognito.models.Grid;
 
 import java.awt.Point;
@@ -14,12 +15,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public class AStarSolver {
-    private final Grid<CellType> grid;
+    private final Grid<Cell> grid;
     private final Map<Point, Integer> cells = new HashMap<>();
     private final List<Point> path = new LinkedList<>();
     private final Set<Point> open = new HashSet<>();
 
-    public AStarSolver(Grid<CellType> grid, Point start) {
+    public AStarSolver(Grid<Cell> grid, Point start) {
         this.grid = grid;
         open.add(start);
         cells.put(start, 0);
@@ -37,29 +38,15 @@ public class AStarSolver {
 
     private boolean isBlocked(Point from, Point to) {
         Direction dir = grid.getDirection(from, to);
-        CellType toV = grid.getValue(to);
-        if (toV.equals(CellType.WALL) || toV.equals(CellType.SPIKEY_BOI)) {
+        Cell toV = grid.getValue(to);
+        if (toV.getType() == CellType.WALL || toV.getType() == CellType.SPIKY_BOI) {
             return true;
         }
-        if (toV.isCurve()) {
-            switch (dir) {
-                case UP:
-                    return toV.equals(CellType.CURVE_TR) || toV.equals(CellType.CURVE_TL);
-                case RIGHT:
-                    return toV.equals(CellType.CURVE_TR) || toV.equals(CellType.CURVE_BR);
-                case DOWN:
-                    return toV.equals(CellType.CURVE_BR) || toV.equals(CellType.CURVE_BL);
-                case LEFT:
-                    return toV.equals(CellType.CURVE_TL) || toV.equals(CellType.CURVE_BL);
-            }
+        if (toV.getType() == CellType.CURVE) {
+            return toV.getDirection() == dir || toV.getDirection() == dir.next();
         }
-        if (toV.isPortal()) {
-            switch (dir) {
-                case UP: return !toV.equals(CellType.PORTAL_DOWN);
-                case RIGHT: return !toV.equals(CellType.PORTAL_LEFT);
-                case DOWN: return !toV.equals(CellType.PORTAL_UP);
-                case LEFT: return !toV.equals(CellType.PORTAL_RIGHT);
-            }
+        if (toV.getType() == CellType.PORTAL) {
+            return toV.getDirection() != dir.next().next();
         }
         return false;
     }

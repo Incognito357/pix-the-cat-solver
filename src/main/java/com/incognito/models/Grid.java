@@ -1,10 +1,13 @@
 package com.incognito.models;
 
+import com.incognito.models.enums.Direction;
+
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Operations for a 2D grid.
@@ -43,8 +46,6 @@ public class Grid<T> {
         private boolean hasDown() {
             return down != null;
         }
-
-
     }
 
     private Cell getCell(Point point) {
@@ -89,13 +90,13 @@ public class Grid<T> {
         return getNeighbors(new Point(x, y));
     }
 
-    public void addRow(T defaultValue) {
+    public void addRow(Supplier<T> defaultValue) {
         if (width == 0) {
             throw new IllegalArgumentException("Cannot infer width of empty grid!");
         }
         List<T> row = new ArrayList<>();
         for (int x = 0; x < width; x++) {
-            row.add(defaultValue);
+            row.add(defaultValue.get());
         }
         addRow(row);
     }
@@ -121,13 +122,13 @@ public class Grid<T> {
         height++;
     }
 
-    public void addColumn(T defaultValue) {
+    public void addColumn(Supplier<T> defaultValue) {
         if (height == 0) {
             throw new IllegalArgumentException("Cannot infer height of empty grid!");
         }
         List<T> col = new ArrayList<>();
         for (int y = 0; y < height; y++) {
-            col.add(defaultValue);
+            col.add(defaultValue.get());
         }
         addColumn(col);
     }

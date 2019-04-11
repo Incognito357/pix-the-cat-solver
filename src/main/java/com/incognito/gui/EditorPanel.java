@@ -1,8 +1,11 @@
 package com.incognito.gui;
 
-import com.incognito.models.CellType;
-import com.incognito.models.Direction;
+import com.incognito.models.Cell;
+import com.incognito.models.CellTarget;
 import com.incognito.models.Grid;
+import com.incognito.models.PortalMap;
+import com.incognito.models.enums.CellType;
+import com.incognito.models.enums.Direction;
 
 import javax.swing.JPanel;
 import java.awt.Color;
@@ -30,13 +33,15 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
     private Point selectOrigin = new Point(0, 0);
     private Point selectDrag = new Point(0, 0);
     private boolean rclick = false, panning = false, selecting = false, selected = false;
-    private Grid<CellType> grid = new Grid<>();
+    private Grid<Cell> grid = new Grid<>();
+    private PortalMap portals = new PortalMap();
     private ClickMode clickMode = ClickMode.DRAW;
-    private CellType drawMode = CellType.WALL;
+    private CellType drawMode = CellType.EMPTY;
     private Point copyOrigin = new Point(0, 0);
     private Point copyDrag = new Point(0, 0);
     private boolean isCut = false, isCopy = false;
-    private List<List<CellType>> clipboard = new ArrayList<>();
+    private List<List<Cell>> clipboard = new ArrayList<>();
+    private String levelName = "";
 
     enum ClickMode {
         DRAW,
@@ -70,6 +75,13 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
         return p;
     }
 
+    private void centerLevel() {
+        if (grid.getWidth() > 0 && grid.getHeight() > 0) {
+            origin.x = (this.getWidth() / 2) - ((grid.getWidth() * cellSize) / 2);
+            origin.y = (this.getHeight() / 2) - ((grid.getHeight() * cellSize) / 2);
+        }
+    }
+
     @Override
     public void paint(Graphics g) {
         super.paint(g);
@@ -98,7 +110,8 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
         int innerCellSize = hideGrid ? cellSize : cellSize - 1;
         for (int y = 0; y < grid.getHeight(); y++){
             for (int x = 0; x < grid.getWidth(); x++){
-                CellType t = grid.getValue(x, y);
+                Cell cell = grid.getValue(x, y);
+                CellType t = cell.getType();
                 if (t != CellType.EMPTY) {
                     Color c = Color.DARK_GRAY;
                     switch (t) {
@@ -108,16 +121,13 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
                         case TARGET:
                             c = new Color(224, 192, 32);
                             break;
-                        case PORTAL_UP:
-                        case PORTAL_RIGHT:
-                        case PORTAL_DOWN:
-                        case PORTAL_LEFT:
+                        case PORTAL:
                             c = new Color(128, 64, 128);
                             break;
                         case PLAYER_START:
                             c = new Color(64, 64, 192);
                             break;
-                        case SPIKEY_BOI:
+                        case SPIKY_BOI:
                             c = new Color(192, 64, 64);
                             break;
                         default:
@@ -130,9 +140,9 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
                     }
                     g.setColor(c);
                     g.fillRect(p1.x, p1.y, innerCellSize, innerCellSize);
-                    if (t.isPortal()) {
+                    if (t == CellType.PORTAL) {
                         g.setColor(Color.DARK_GRAY);
-                        Direction dir = t.getDirection();
+                        Direction dir = cell.getDirection();
                         double partialSize = 0.6;
                         int dirSize = (int)Math.ceil(innerCellSize * partialSize);
                         int px = p1.x + (dir == Direction.LEFT ? (int)(innerCellSize * (1 - partialSize)) : 0);
@@ -140,12 +150,13 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
                         int cx = dir == Direction.RIGHT || dir == Direction.LEFT ? dirSize : innerCellSize;
                         int cy = dir == Direction.UP || dir == Direction.DOWN ? dirSize : innerCellSize;
                         g.fillRect(px, py, cx, cy);
-                    } else if (t.isCurve()) {
+                    } else if (t == CellType.CURVE) {
                         g.setColor(Color.LIGHT_GRAY);
-                        double start = -90 * ((t.ordinal() + 1) - CellType.CURVE_TR.ordinal());
+                        Direction dir = cell.getDirection();
+                        double start = -90 * ((dir.ordinal() + 1) - Direction.UP.ordinal());
                         Arc2D.Double arc = new Arc2D.Double(
-                                p1.x - (t == CellType.CURVE_TL || t == CellType.CURVE_BL ? cellSize - 1 : 0),
-                                p1.y - (t == CellType.CURVE_TR || t == CellType.CURVE_TL ? cellSize - 1 : 0),
+                                p1.x - (dir == Direction.LEFT || dir == Direction.DOWN ? cellSize - 1 : 0),
+                                p1.y - (dir == Direction.UP || dir == Direction.LEFT ? cellSize - 1 : 0),
                                 innerCellSize * 2, innerCellSize * 2, start, -90, Arc2D.PIE);
                         Graphics2D g2 = (Graphics2D)g;
                         g2.fill(arc);
@@ -196,39 +207,74 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
             g.drawRect(p1.x, p1.y, p2.x, p2.y);
         }
 
-        boolean haveExit = false;
-        int eggBalance = 0;
-        for (int y = 0; y < grid.getHeight(); y++){
-            List<CellType> row = grid.getRow(y);
-            for (int x = 0; x < grid.getWidth(); x++){
-                CellType c = row.get(x);
-                if (c.isRotateable()){
-                    haveExit = true;
-                } else if (c == CellType.EGG){
-                    eggBalance++;
-                } else if (c == CellType.TARGET){
-                    eggBalance--;
+        if (grid.getWidth() > 0 && grid.getHeight() > 0) {
+            boolean haveExit = false;
+            int eggBalance = 0;
+            int exitTargets = 0;
+            CellTarget tmpTarget = new CellTarget(levelName, new Point(0, 0));
+            for (int y = 0; y < grid.getHeight(); y++) {
+                List<Cell> row = grid.getRow(y);
+                for (int x = 0; x < grid.getWidth(); x++) {
+                    Cell c = row.get(x);
+                    CellType type = c.getType();
+                    if (type == CellType.PORTAL) {
+                        haveExit = true;
+                        if (!portals.hasLink(tmpTarget)) {
+                            exitTargets++;
+                        }
+                    } else if (type == CellType.EGG) {
+                        eggBalance++;
+                    } else if (type == CellType.TARGET) {
+                        eggBalance--;
+                    }
+                    tmpTarget.getTarget().x++;
                 }
+                tmpTarget.getTarget().y++;
+                tmpTarget.getTarget().x = 0;
             }
-        }
 
-        int p = 0;
-        if (eggBalance != 0){
-            String s = "s";
-            if (Math.abs(eggBalance) == 1){
-                s = "";
+            int p = 0;
+            if (eggBalance != 0) {
+                String s = "s";
+                if (Math.abs(eggBalance) == 1) {
+                    s = "";
+                }
+                drawString(g, Color.RED, String.format(
+                            "There %s %d more %s than %s!",
+                            s.length() == 0 ? "is" : "are",
+                            Math.abs(eggBalance),
+                            (eggBalance < 0 ? "target" : "egg") + s,
+                            (eggBalance < 0 ? "egg" : "target") + s),
+                        new Point(5, p += 15));
             }
-            g.setColor(Color.RED);
-            g.drawString(String.format("There %s %d more %s than %s!",
-                    s.length() == 0 ? "is" : "are",
-                    Math.abs(eggBalance),
-                    (eggBalance < 0 ? "target" : "egg") + s,
-                    (eggBalance < 0 ? "egg" : "target") + s), 5, p+=15);
+            if (!haveExit) {
+                drawString(g, Color.RED, "There is no exit portal!", new Point(5, p += 15));
+            }
+            if (exitTargets > 0) {
+                String s = "s";
+                if (exitTargets == 1) {
+                    s = "";
+                }
+                drawString(g, Color.YELLOW, String.format(
+                        "There %s %d portal%s in this level without %starget%s!",
+                            (exitTargets == 1 ? "is" : "are"),
+                            exitTargets, s, exitTargets == 1 ? "a " : "", s),
+                        new Point(5, p += 15));
+            }
         }
-        if (!haveExit){
-            g.setColor(Color.RED);
-            g.drawString("There is no exit portal!", 5, p+=15);
+    }
+
+    private void drawString(Graphics g, Color c, String s, Point pos) {
+        g.setColor(Color.black);
+        int size = 2;
+        for (int y = -size; y <= size; y++) {
+            for (int x = -size; x <= size; x++) {
+                if (x == 0 && y == 0) continue;
+                g.drawString(s, pos.x + x, pos.y + y);
+            }
         }
+        g.setColor(c);
+        g.drawString(s, pos.x, pos.y);
     }
 
     @Override
@@ -354,13 +400,15 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
                 Point p2 = new Point(Math.abs(selectOrigin.x - selectDrag.x), Math.abs(selectOrigin.y - selectDrag.y));
                 for (int y = 0; y < p2.y; y++){
                     for (int x = 0; x < p2.x; x++){
-                        grid.setCell(x + p1.x, y + p1.y, cell);
+                        grid.setCell(x + p1.x, y + p1.y, new Cell(cell));
                     }
                 }
             } else {
-                CellType last = grid.setCell(hoverCell.x, hoverCell.y, cell);
-                if (cell.isRotateable()){
-                    grid.setCell(hoverCell.x, hoverCell.y, last.isRotateable() ? last.next() : cell);
+                Cell last = grid.getValue(hoverCell.x, hoverCell.y);
+                if (last.getType() == cell) {
+                    last.setDirection(last.getDirection().next());
+                } else {
+                    grid.setCell(hoverCell.x, hoverCell.y, new Cell(cell));
                 }
             }
         }
@@ -395,13 +443,13 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
                 copyDrag = new Point(selectDrag.x, selectDrag.y);
                 Point p1 = new Point(Math.min(selectOrigin.x, selectDrag.x), Math.min(selectOrigin.y, selectDrag.y));
                 Point p2 = new Point(Math.abs(selectOrigin.x - selectDrag.x), Math.abs(selectOrigin.y - selectDrag.y));
-                for (List<CellType> cellTypes : clipboard) {
+                for (List<Cell> cellTypes : clipboard) {
                     cellTypes.clear();
                 }
                 clipboard.clear();
                 for (int y = 0; y < p2.y; y++) {
-                    List<CellType> row = grid.getRow(y + p1.y);
-                    List<CellType> copyTo = new ArrayList<>();
+                    List<Cell> row = grid.getRow(y + p1.y);
+                    List<Cell> copyTo = new ArrayList<>();
                     for (int x = 0; x < p2.x; x++) {
                         copyTo.add(row.get(x + p1.x));
                     }
@@ -414,7 +462,7 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
                     Point p2 = new Point(Math.abs(copyOrigin.x - copyDrag.x), Math.abs(copyOrigin.y - copyDrag.y));
                     for (int y = 0; y < p2.y; y++) {
                         for (int x = 0; x < p2.x; x++) {
-                            grid.setCell(x + p1.x, y + p1.y, CellType.EMPTY);
+                            grid.setCell(x + p1.x, y + p1.y, new Cell(CellType.EMPTY));
                         }
                     }
                     isCut = false;
@@ -423,7 +471,7 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
                 Point start = new Point(Math.min(selectOrigin.x, selectDrag.x), Math.min(selectOrigin.y, selectDrag.y));
                 for (int y = 0; y < clipboard.size(); y++){
                     if (y + start.y >= grid.getHeight() || y + start.y < 0) continue;
-                    List<CellType> row = clipboard.get(y);
+                    List<Cell> row = clipboard.get(y);
                     for (int x = 0; x < row.size(); x++){
                         if (x + start.x >= grid.getWidth() || x + start.x < 0) continue;
                         grid.setCell(x + start.x, y + start.y, row.get(x));
@@ -442,7 +490,7 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
     public void setGridWidth(int width) {
         while (width != grid.getWidth()){
             if (width > grid.getWidth()) {
-                grid.addColumn(CellType.EMPTY);
+                grid.addColumn(() -> new Cell(CellType.EMPTY));
             } else {
                 grid.removeColumn();
             }
@@ -453,7 +501,7 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
     public void setGridHeight(int height) {
         while (height != grid.getHeight()){
             if (height > grid.getHeight()) {
-                grid.addRow(CellType.EMPTY);
+                grid.addRow(() -> new Cell(CellType.EMPTY));
             } else {
                 grid.removeRow();
             }
@@ -483,12 +531,14 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
         return drawMode;
     }
 
-    public Grid<CellType> getGrid(){
+    public Grid<Cell> getGrid(){
         return grid;
     }
 
-    public void setGrid(Grid<CellType> grid) {
+    public void setGrid(Grid<Cell> grid, String name) {
         this.grid = grid;
+        this.levelName = name;
+        centerLevel();
         repaint();
     }
 }
