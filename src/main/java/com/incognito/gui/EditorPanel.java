@@ -487,6 +487,71 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
 
     }
 
+    public void rotate(boolean clockwise) {
+        Point p1, p2;
+        Grid<Cell> tmpGrid = new Grid<>();
+        if (selected) {
+            p1 = new Point(Math.min(selectOrigin.x, selectDrag.x), Math.min(selectOrigin.y, selectDrag.y));
+            p2 = new Point(Math.abs(selectOrigin.x - selectDrag.x), Math.abs(selectOrigin.y - selectDrag.y));
+            if (p2.x != p2.y) {
+                //TODO: overwrite cells outside selection, if rotating rectangle?
+                return;
+            }
+        } else {
+            p1 = new Point(0, 0);
+            p2 = new Point(grid.getWidth(), grid.getHeight());
+        }
+        if (clockwise) {
+            for (int y = p2.y - 1; y >= 0; y--) {
+                List<Cell> row = new ArrayList<>();
+                for (int x = 0; x < p2.x; x++) {
+                    Cell c = grid.getValue(x + p1.x, y + p1.y);
+                    if (c.getType().isRotateable()) {
+                        c.setDirection(c.getDirection().next());
+                    }
+                    row.add(c);
+                }
+                tmpGrid.addColumn(row);
+            }
+        } else {
+            for (int x = p2.x - 1; x >= 0; x--) {
+                List<Cell> col = new ArrayList<>();
+                for (int y = 0; y < p2.y; y++) {
+                    Cell c = grid.getValue(x + p1.x, y + p1.y);
+                    if (c.getType().isRotateable()) {
+                        c.setDirection(c.getDirection().prev());
+                    }
+                    col.add(c);
+                }
+                tmpGrid.addRow(col);
+            }
+        }
+        if (selected && (p2.x != grid.getWidth() || p2.y == grid.getHeight())) {
+            for (int y = 0; y < p2.y; y++) {
+                for (int x = 0; x < p2.x; x++) {
+                    grid.setCell(x + p1.x, y + p1.y, tmpGrid.getValue(x, y));
+                }
+            }
+        } else {
+            grid = tmpGrid;
+            centerLevel();
+        }
+        repaint();
+    }
+
+    public void swap() {
+        for (List<Cell> row : grid.getData()) {
+            for (Cell c : row) {
+                if (c.getType() == CellType.EGG) {
+                    c.setType(CellType.TARGET);
+                } else if (c.getType() == CellType.TARGET) {
+                    c.setType(CellType.EGG);
+                }
+            }
+        }
+        repaint();
+    }
+
     public void setGridWidth(int width) {
         while (width != grid.getWidth()){
             if (width > grid.getWidth()) {

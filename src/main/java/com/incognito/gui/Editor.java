@@ -48,6 +48,9 @@ public class Editor extends JFrame {
     private JButton btnNew;
     private JButton btnExport;
     private JButton btnImport;
+    private JButton btnSwap;
+    private JButton btnRotClock;
+    private JButton btnRotAnti;
 
     private NameDialog dlgName = new NameDialog();
     private DefaultListModel<String> lstLevelsModel = new DefaultListModel<>();
@@ -90,6 +93,9 @@ public class Editor extends JFrame {
         btnNew = new JButton();
         btnExport = new JButton();
         btnImport = new JButton();
+        btnSwap = new JButton();
+        btnRotClock = new JButton();
+        btnRotAnti = new JButton();
         lstLevels = new JList(lstLevelsModel);
 
         numWidth.addChangeListener(e -> pnlEditor.setGridWidth((int) numWidth.getValue()));
@@ -163,6 +169,9 @@ public class Editor extends JFrame {
                 }
             }
         });
+        btnSwap.addActionListener(e -> pnlEditor.swap());
+        btnRotClock.addActionListener(e -> pnlEditor.rotate(true));
+        btnRotAnti.addActionListener(e -> pnlEditor.rotate(false));
         lstLevels.addListSelectionListener(e -> {
             int index = lstLevels.getSelectedIndex();
             if (index != -1) {
@@ -241,6 +250,12 @@ public class Editor extends JFrame {
         panel2.add(btnExport);
         btnImport.setText("Import");
         panel2.add(btnImport);
+        btnSwap.setText("Egg <-> Target");
+        panel2.add(btnSwap);
+        btnRotClock.setText("↻");
+        panel2.add(btnRotClock);
+        btnRotAnti.setText("↺");
+        panel2.add(btnRotAnti);
         pnlEditor = new EditorPanel();
         gbc = new GridBagConstraints();
         gbc.gridx = 0;

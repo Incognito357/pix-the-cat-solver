@@ -24,7 +24,7 @@ public class NameDialog extends JDialog {
 
     public NameDialog() {
         $$$setupUI$$$();
-        
+
         setTitle("New Level");
         setContentPane(pnlRoot);
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
@@ -82,7 +82,7 @@ public class NameDialog extends JDialog {
         gbc.weightx = 1.0;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(0, 5, 0, 5);
+        gbc.insets = new Insets(5, 5, 0, 5);
         pnlRoot.add(txtName, gbc);
     }
 
@@ -92,4 +92,5 @@ public class NameDialog extends JDialog {
     public JComponent $$$getRootComponent$$$() {
         return pnlRoot;
     }
+
 }
