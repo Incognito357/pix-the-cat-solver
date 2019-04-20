@@ -65,7 +65,7 @@ public class GridTest {
         grid.setGrid(data);
         assertThat(grid.getWidth()).isEqualTo(3);
         assertThat(grid.getHeight()).isEqualTo(2);
-        assertThat(grid.getData()).containsExactly(data.get(0), data.get(1));
+        assertThat(grid.getGrid()).containsExactly(data.get(0), data.get(1));
         assertThat(grid.getValue(1, 0)).isEqualTo(2);
         assertThat(grid.getValue(0, 1)).isEqualTo(4);
     }

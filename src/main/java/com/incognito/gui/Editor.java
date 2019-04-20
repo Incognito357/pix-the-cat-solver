@@ -2,9 +2,14 @@ package com.incognito.gui;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.incognito.models.Cell;
-import com.incognito.models.enums.CellType;
 import com.incognito.models.Grid;
+import com.incognito.models.Level;
+import com.incognito.models.World;
+import com.incognito.models.enums.CellType;
+import com.incognito.models.serialization.PointKeyDeserializer;
+import com.incognito.models.serialization.PointKeySerializer;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
@@ -15,7 +20,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
@@ -27,13 +31,12 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Point;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.apache.commons.text.WordUtils.capitalizeFully;
 
@@ -54,7 +57,7 @@ public class Editor extends JFrame {
 
     private NameDialog dlgName = new NameDialog();
     private DefaultListModel<String> lstLevelsModel = new DefaultListModel<>();
-    private Map<String, Grid<Cell>> levels = new LinkedHashMap<>();
+    private World world = new World();
     private ObjectMapper objectMapper = new ObjectMapper();
 
     public static void main(String[] args) {
@@ -64,7 +67,7 @@ public class Editor extends JFrame {
             e.printStackTrace();
         }
 
-        Editor e = new Editor();
+        new Editor();
     }
 
     public Editor() {
@@ -77,6 +80,11 @@ public class Editor extends JFrame {
         pack();
         setVisible(true);
         dlgName.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
+
+        SimpleModule module = new SimpleModule();
+        module.addKeySerializer(Point.class, new PointKeySerializer());
+        module.addKeyDeserializer(Point.class, new PointKeyDeserializer());
+        objectMapper.registerModule(module);
     }
 
     private void createUIComponents() {
@@ -110,38 +118,33 @@ public class Editor extends JFrame {
             dlgName.setVisible(true);
             if (dlgName.getName() != null) {
                 String name = dlgName.getName();
-                if (!levels.containsKey(name)) {
-                    if (levels.size() > 0) {
-                        levels.put(lstLevelsModel.get(lstLevels.getSelectedIndex()), pnlEditor.getGrid());
-                    }
-                    lstLevelsModel.addElement(name);
-                    Grid<Cell> g = new Grid<>();
-                    List<Cell> row = new ArrayList<>();
-                    for (int x = 0; x < EditorPanel.DEFAULT_WIDTH; x++) {
-                        row.add(new Cell(CellType.EMPTY));
-                    }
-                    for (int y = 0; y < EditorPanel.DEFAULT_HEIGHT; y++) {
-                        g.addRow(row);
-                    }
-                    levels.put(name, g);
-                    pnlEditor.setGrid(g, name);
-                    numWidth.setValue(g.getWidth());
-                    numHeight.setValue(g.getHeight());
-                    lstLevels.setSelectedIndex(lstLevelsModel.size() - 1);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Level '" + name + "' already exists!");
+                lstLevelsModel.addElement(name);
+                Grid<Cell> g = new Grid<>();
+                List<Cell> row = new ArrayList<>();
+                for (int x = 0; x < EditorPanel.DEFAULT_WIDTH; x++) {
+                    row.add(new Cell(CellType.EMPTY));
                 }
+                for (int y = 0; y < EditorPanel.DEFAULT_HEIGHT; y++) {
+                    g.addRow(row);
+                }
+                Level level = new Level(name, g);
+                world.addTail(level);
+                pnlEditor.setLevel(level);
+                numWidth.setValue(g.getWidth());
+                numHeight.setValue(g.getHeight());
+                lstLevels.setSelectedIndex(lstLevelsModel.size() - 1);
             }
         });
         btnExport.addActionListener(e -> {
             JFileChooser dlgSave = new JFileChooser();
             if (dlgSave.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 File file = dlgSave.getSelectedFile();
-                if (levels.size() > 0) {
-                    levels.put(lstLevelsModel.get(lstLevels.getSelectedIndex()), pnlEditor.getGrid());
-                }
                 try {
-                    objectMapper.writeValue(file, levels);
+                    List<Level> export = new ArrayList<>();
+                    for (Level l : world) {
+                        export.add(l);
+                    }
+                    objectMapper.writeValue(file, export);
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
@@ -151,19 +154,17 @@ public class Editor extends JFrame {
             JFileChooser dlgOpen = new JFileChooser();
             if (dlgOpen.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 File file = dlgOpen.getSelectedFile();
-                levels.clear();
+                world.clear();
                 lstLevels.clearSelection();
                 lstLevelsModel.clear();
                 try (FileInputStream in = new FileInputStream(file)) {
-                    Map<String, Map<String, Object>> map = objectMapper.readValue(in, LinkedHashMap.class);
-                    map.forEach((k, v) -> {
-                        lstLevelsModel.addElement(k);
-                        Grid<Cell> g = new Grid<>();
-                        g.setGrid(objectMapper.convertValue(v.get("data"), new TypeReference<List<List<Cell>>>() {
-                        }));
-                        levels.put(k, g);
+                    List<Level> imported = objectMapper.readValue(in, new TypeReference<List<Level>>() {
                     });
-                    if (levels.size() > 0) lstLevels.setSelectedIndex(0);
+                    imported.forEach(level -> {
+                        lstLevelsModel.addElement(level.getName());
+                        world.addTail(level);
+                    });
+                    if (world.size() > 0) lstLevels.setSelectedIndex(0);
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
@@ -175,11 +176,15 @@ public class Editor extends JFrame {
         lstLevels.addListSelectionListener(e -> {
             int index = lstLevels.getSelectedIndex();
             if (index != -1) {
-                String name = lstLevelsModel.get(index);
-                Grid<Cell> g = levels.get(name);
-                pnlEditor.setGrid(g, name);
-                numWidth.setValue(g.getWidth());
-                numHeight.setValue(g.getHeight());
+                for (Level l : world) {
+                    if (index == 0) {
+                        pnlEditor.setLevel(l);
+                        numWidth.setValue(l.getGrid().getWidth());
+                        numHeight.setValue(l.getGrid().getHeight());
+                        break;
+                    }
+                    index--;
+                }
             }
         });
     }

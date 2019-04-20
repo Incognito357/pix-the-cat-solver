@@ -186,13 +186,6 @@ public class Grid<T> {
         height = 0;
     }
 
-    public void setGrid(List<List<T>> data) {
-        clear();
-        for (List<T> row : data) {
-            addRow(row);
-        }
-    }
-
     public List<T> getRow(int row) {
         Cell c = getCell(0, row);
         List<T> data = new ArrayList<>();
@@ -213,12 +206,19 @@ public class Grid<T> {
         return data;
     }
 
-    public List<List<T>> getData() {
+    public List<List<T>> getGrid() {
         List<List<T>> data = new ArrayList<>();
         for (int y = 0; y < height; y++) {
             data.add(getRow(y));
         }
         return data;
+    }
+
+    public void setGrid(List<List<T>> data) {
+        clear();
+        for (List<T> row : data) {
+            addRow(row);
+        }
     }
 
     public T setCell(Point point, T value) {
