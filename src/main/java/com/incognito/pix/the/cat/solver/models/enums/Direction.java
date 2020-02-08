@@ -1,4 +1,4 @@
-package com.incognito.models.enums;
+package com.incognito.pix.the.cat.solver.models.enums;
 
 import org.apache.commons.math3.util.FastMath;
 

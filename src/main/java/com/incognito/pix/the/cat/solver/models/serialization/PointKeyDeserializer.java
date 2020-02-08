@@ -1,4 +1,4 @@
-package com.incognito.models.serialization;
+package com.incognito.pix.the.cat.solver.models.serialization;
 
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.KeyDeserializer;

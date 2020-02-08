@@ -1,6 +1,6 @@
-package com.incognito.models;
+package com.incognito.pix.the.cat.solver.models;
 
-import com.incognito.models.enums.Direction;
+import com.incognito.pix.the.cat.solver.models.enums.Direction;
 
 import java.awt.Point;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package com.incognito.models.enums;
+package com.incognito.pix.the.cat.solver.models.enums;
 
 public enum CellType {
     EMPTY,

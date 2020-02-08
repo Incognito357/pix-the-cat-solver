@@ -1,15 +1,15 @@
-package com.incognito.gui;
+package com.incognito.pix.the.cat.solver.gui;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.incognito.models.Cell;
-import com.incognito.models.Grid;
-import com.incognito.models.Level;
-import com.incognito.models.World;
-import com.incognito.models.enums.CellType;
-import com.incognito.models.serialization.PointKeyDeserializer;
-import com.incognito.models.serialization.PointKeySerializer;
+import com.incognito.pix.the.cat.solver.models.Cell;
+import com.incognito.pix.the.cat.solver.models.Grid;
+import com.incognito.pix.the.cat.solver.models.Level;
+import com.incognito.pix.the.cat.solver.models.World;
+import com.incognito.pix.the.cat.solver.models.enums.CellType;
+import com.incognito.pix.the.cat.solver.models.serialization.PointKeyDeserializer;
+import com.incognito.pix.the.cat.solver.models.serialization.PointKeySerializer;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;

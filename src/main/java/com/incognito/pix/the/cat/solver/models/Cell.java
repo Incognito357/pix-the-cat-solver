@@ -1,9 +1,9 @@
-package com.incognito.models;
+package com.incognito.pix.the.cat.solver.models;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.incognito.models.enums.CellType;
-import com.incognito.models.enums.Direction;
+import com.incognito.pix.the.cat.solver.models.enums.CellType;
+import com.incognito.pix.the.cat.solver.models.enums.Direction;
 
 public class Cell {
     private CellType type;

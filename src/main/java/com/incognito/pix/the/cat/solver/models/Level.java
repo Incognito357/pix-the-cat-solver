@@ -1,4 +1,4 @@
-package com.incognito.models;
+package com.incognito.pix.the.cat.solver.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

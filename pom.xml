@@ -52,7 +52,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.incognito.gui.Editor</mainClass>
+                            <mainClass>com.incognito.pix.the.cat.solver.gui.Editor</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="com.incognito.gui.Editor">
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="com.incognito.pix.the.cat.solver.gui.Editor">
   <grid id="27dc6" binding="pnlRoot" layout-manager="GridBagLayout">
     <constraints>
       <xy x="20" y="20" width="1078" height="540"/>
@@ -135,7 +135,7 @@
                   </component>
                 </children>
               </grid>
-              <component id="68a9e" class="com.incognito.gui.EditorPanel" binding="pnlEditor">
+              <component id="68a9e" class="com.incognito.pix.the.cat.solver.gui.EditorPanel" binding="pnlEditor">
                 <constraints>
                   <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                   <gridbag weightx="1.0" weighty="1.0"/>

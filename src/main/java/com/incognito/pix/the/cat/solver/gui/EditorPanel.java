@@ -1,10 +1,10 @@
-package com.incognito.gui;
+package com.incognito.pix.the.cat.solver.gui;
 
-import com.incognito.models.Cell;
-import com.incognito.models.Grid;
-import com.incognito.models.Level;
-import com.incognito.models.enums.CellType;
-import com.incognito.models.enums.Direction;
+import com.incognito.pix.the.cat.solver.models.Cell;
+import com.incognito.pix.the.cat.solver.models.Grid;
+import com.incognito.pix.the.cat.solver.models.Level;
+import com.incognito.pix.the.cat.solver.models.enums.CellType;
+import com.incognito.pix.the.cat.solver.models.enums.Direction;
 
 import javax.swing.JPanel;
 import java.awt.Color;

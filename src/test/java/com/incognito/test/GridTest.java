@@ -1,6 +1,6 @@
 package com.incognito.test;
 
-import com.incognito.models.Grid;
+import com.incognito.pix.the.cat.solver.models.Grid;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;

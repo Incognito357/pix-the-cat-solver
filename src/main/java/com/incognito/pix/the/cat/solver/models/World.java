@@ -1,4 +1,4 @@
-package com.incognito.models;
+package com.incognito.pix.the.cat.solver.models;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
