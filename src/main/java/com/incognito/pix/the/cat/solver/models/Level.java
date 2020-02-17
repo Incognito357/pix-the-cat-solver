@@ -1,7 +1,6 @@
 package com.incognito.pix.the.cat.solver.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.awt.Point;
 import java.util.HashMap;
 import java.util.Map;

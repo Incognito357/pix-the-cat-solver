@@ -4,7 +4,6 @@ import com.incognito.pix.the.cat.solver.models.Cell;
 import com.incognito.pix.the.cat.solver.models.Grid;
 import com.incognito.pix.the.cat.solver.models.enums.CellType;
 import com.incognito.pix.the.cat.solver.models.enums.Direction;
-
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,13 +21,18 @@ public class AStarSolver {
     private final Point target;
     private final Point start;
     private final Map<Point, Integer> trail;
+    private final Set<Point> collectedEggs;
+    private final Set<Point> collectedTargets;
     private final boolean avoidTargets;
 
-    public AStarSolver(Grid<Cell> grid, Map<Point, Integer> trail, Point start, Point target, boolean avoidTargets) {
+    public AStarSolver(Grid<Cell> grid, Point start, Point target, Map<Point, Integer> trail,
+                       Set<Point> collectedEggs, Set<Point> collectedTargets, boolean avoidTargets) {
         this.grid = grid;
         this.target = target;
         this.trail = trail;
         this.start = start;
+        this.collectedEggs = collectedEggs;
+        this.collectedTargets = collectedTargets;
         this.avoidTargets = avoidTargets;
         open.add(new AStarNode(null, start, 0, 0));
     }
@@ -39,11 +43,13 @@ public class AStarSolver {
             case RIGHT: return new Point(p.x + 1, p.y);
             case DOWN: return new Point(p.x, p.y + 1);
             case LEFT: return new Point(p.x - 1, p.y);
+            case NONE:
+                break;
         }
         return p;
     }
 
-    private int getEuclidDistance(Point a, Point b) {
+    public static int getEuclidDistance(Point a, Point b) {
         return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
     }
 
@@ -59,8 +65,11 @@ public class AStarSolver {
         if (toV.getType() == CellType.PORTAL) {
             return toV.getDirection() != dir.next().next();
         }
-        if (toV.getType() == CellType.TARGET) {
-            return avoidTargets;
+        if (toV.getType() == CellType.TARGET && (avoidTargets || (!to.equals(target) && !collectedTargets.contains(to)))) {
+            return true;
+        }
+        if (toV.getType() == CellType.EGG && !collectedEggs.contains(to) && !to.equals(target)) {
+            return true;
         }
         if (trail.containsKey(to)) {
             return from.getG() <= trail.get(to);
@@ -68,7 +77,7 @@ public class AStarSolver {
         return false;
     }
 
-    public List<Point> Solve(){
+    public List<Point> solve(){
         while (!open.isEmpty()){
             AStarNode p = open.pollFirst();
             closed.add(p);
@@ -80,7 +89,7 @@ public class AStarSolver {
                 AStarNode n = p;
                 Point np;
                 while (!(np = n.getP()).equals(start)) {
-                    path.add(0, np);
+                    path.add(0, new Point(np));
                     n = n.getParent();
                 }
                 return path;
@@ -89,7 +98,8 @@ public class AStarSolver {
             for (Direction dir : Direction.values()) {
                 Point nextPoint = getNeighbor(p.getP(), dir);
                 AStarNode next = new AStarNode(p, nextPoint, p.getG() + 1, getEuclidDistance(nextPoint, target));
-                if (open.contains(next) || closed.contains(next) || isBlocked(p, nextPoint)) {
+                if (nextPoint.x < 0 || nextPoint.y < 0 || nextPoint.x >= grid.getWidth() || nextPoint.y >= grid.getHeight() ||
+                        open.contains(next) || closed.contains(next) || isBlocked(p, nextPoint)) {
                     continue;
                 }
                 open.add(next);

@@ -8,6 +8,20 @@ public class World implements Iterable<Level> {
     private Level tail;
     private int size = 0;
 
+    public Level get(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException();
+        }
+        int i = 0;
+        for (Level l : this) {
+            if (i == index) {
+                return l;
+            }
+            i++;
+        }
+        throw new NoSuchElementException();
+    }
+
     @Override
     public Iterator<Level> iterator() {
         return new Iterator<Level>() {
@@ -37,12 +51,11 @@ public class World implements Iterable<Level> {
         if (head == null) {
             head = level;
             level.setParent(null);
-            level.setChild(null);
         } else {
             tail.setChild(level);
             level.setParent(tail);
-            level.setChild(null);
         }
+        level.setChild(null);
         tail = level;
         size++;
     }
@@ -50,13 +63,12 @@ public class World implements Iterable<Level> {
     public void addHead(Level level) {
         if (head == null) {
             tail = level;
-            level.setParent(null);
             level.setChild(null);
         } else {
             head.setParent(level);
-            level.setParent(null);
             level.setChild(head);
         }
+        level.setParent(null);
         head = level;
         size++;
     }
@@ -85,6 +97,10 @@ public class World implements Iterable<Level> {
 
     public int size() {
         return size;
+    }
+
+    public boolean isEmpty() {
+        return size == 0;
     }
 
     public void clear() {

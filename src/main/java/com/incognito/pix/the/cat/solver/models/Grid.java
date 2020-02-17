@@ -1,7 +1,9 @@
 package com.incognito.pix.the.cat.solver.models;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.incognito.pix.the.cat.solver.models.enums.Direction;
-
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,17 +19,17 @@ import java.util.function.Supplier;
 public class Grid<T> {
     private int width = 0;
     private int height = 0;
-    private final Map<Point, Cell> grid = new HashMap<>();
+    private final Map<Point, LinkedCell> gridMap = new HashMap<>();
 
-    private class Cell {
+    public class LinkedCell {
         private Point pos;
-        private Cell up;
-        private Cell down;
-        private Cell right;
-        private Cell left;
+        private LinkedCell up;
+        private LinkedCell down;
+        private LinkedCell right;
+        private LinkedCell left;
         private T value;
 
-        private Cell(T value) {
+        private LinkedCell(T value) {
             this.value = value;
         }
 
@@ -46,25 +48,35 @@ public class Grid<T> {
         private boolean hasDown() {
             return down != null;
         }
+
+        public Point getPos() {
+            return pos;
+        }
+
+        public T getValue() {
+            return value;
+        }
     }
 
-    private Cell getCell(Point point) {
-        Cell cell = grid.get(point);
-        if (cell == null) throw new IndexOutOfBoundsException("Coordinates [" + point.x + "," + point.y + "] out of bounds");
-        return cell;
+    private LinkedCell getCell(Point point) {
+        LinkedCell linkedCell = gridMap.get(point);
+        if (linkedCell == null) {
+            throw new IndexOutOfBoundsException("Coordinates [" + point.x + "," + point.y + "] out of bounds");
+        }
+        return linkedCell;
     }
 
-    private Cell getCell(int x, int y) {
+    private LinkedCell getCell(int x, int y) {
         return getCell(new Point(x, y));
     }
 
-    private Cell putCell(Point point, T value) {
-        Cell c = new Cell(value);
+    private LinkedCell putCell(Point point, T value) {
+        LinkedCell c = new LinkedCell(value);
         c.pos = point;
-        return grid.put(point, c);
+        return gridMap.put(point, c);
     }
 
-    private Cell putCell(int x, int y, T value) {
+    private LinkedCell putCell(int x, int y, T value) {
         return putCell(new Point(x, y), value);
     }
 
@@ -78,11 +90,11 @@ public class Grid<T> {
 
     public List<T> getNeighbors(Point point) {
         List<T> neighbors = new ArrayList<>();
-        Cell cell = getCell(point);
-        if (cell.hasUp()) neighbors.add(cell.up.value);
-        if (cell.hasRight()) neighbors.add(cell.right.value);
-        if (cell.hasDown()) neighbors.add(cell.down.value);
-        if (cell.hasLeft()) neighbors.add(cell.left.value);
+        LinkedCell linkedCell = getCell(point);
+        if (linkedCell.hasUp()) neighbors.add(linkedCell.up.value);
+        if (linkedCell.hasRight()) neighbors.add(linkedCell.right.value);
+        if (linkedCell.hasDown()) neighbors.add(linkedCell.down.value);
+        if (linkedCell.hasLeft()) neighbors.add(linkedCell.left.value);
         return neighbors;
     }
 
@@ -111,7 +123,7 @@ public class Grid<T> {
         }
         if (width == 0) width = x;
         for (x = 0; x < width; x++) {
-            Cell c = getCell(x, height);
+            LinkedCell c = getCell(x, height);
             if (height > 0) {
                 c.up = getCell(x, height - 1);
                 c.up.down = c;
@@ -143,7 +155,7 @@ public class Grid<T> {
         }
         if (height == 0) height = y;
         for (y = 0; y < height; y++) {
-            Cell c = getCell(width, y);
+            LinkedCell c = getCell(width, y);
             if (width > 0) {
                 c.left = getCell(width - 1, y);
                 c.left.right = c;
@@ -157,7 +169,7 @@ public class Grid<T> {
     public void removeRow() {
         if (height > 0) {
             for (int x = 0; x < width; x++) {
-                Cell c = grid.remove(new Point(x, height - 1));
+                LinkedCell c = gridMap.remove(new Point(x, height - 1));
                 if (c.hasUp()) c.up.down = null;
             }
             height--;
@@ -170,7 +182,7 @@ public class Grid<T> {
     public void removeColumn() {
         if (width > 0) {
             for (int y = 0; y < height; y++) {
-                Cell c = grid.remove(new Point(width - 1, y));
+                LinkedCell c = gridMap.remove(new Point(width - 1, y));
                 if (c.hasLeft()) c.left.right = null;
             }
             width--;
@@ -181,13 +193,13 @@ public class Grid<T> {
     }
 
     public void clear() {
-        grid.clear();
+        gridMap.clear();
         width = 0;
         height = 0;
     }
 
-    public List<T> getRow(int row) {
-        Cell c = getCell(0, row);
+    public List<T> getRowValues(int row) {
+        LinkedCell c = getCell(0, row);
         List<T> data = new ArrayList<>();
         for (int x = 0 ; x < width; x++) {
             data.add(c.value);
@@ -196,8 +208,8 @@ public class Grid<T> {
         return data;
     }
 
-    public List<T> getColumn(int column) {
-        Cell c = getCell(column, 0);
+    public List<T> getColumnValues(int column) {
+        LinkedCell c = getCell(column, 0);
         List<T> data = new ArrayList<>();
         for (int y = 0; y < height; y++) {
             data.add(c.value);
@@ -206,14 +218,36 @@ public class Grid<T> {
         return data;
     }
 
-    public List<List<T>> getGrid() {
+    @JsonGetter("grid")
+    public List<List<T>> exportGridValues() {
         List<List<T>> data = new ArrayList<>();
         for (int y = 0; y < height; y++) {
-            data.add(getRow(y));
+            data.add(getRowValues(y));
         }
         return data;
     }
 
+    public List<LinkedCell> getRow(int row) {
+        LinkedCell c = getCell(0, row);
+        List<LinkedCell> data = new ArrayList<>();
+        for (int x = 0; x < width; x++) {
+            data.add(c);
+            c = c.right;
+        }
+        return data;
+    }
+
+    public List<LinkedCell> getColumn(int column) {
+        LinkedCell c = getCell(column, 0);
+        List<LinkedCell> data = new ArrayList<>();
+        for (int y = 0; y < height; y++) {
+            data.add(c);
+            c = c.down;
+        }
+        return data;
+    }
+
+    @JsonSetter("grid")
     public void setGrid(List<List<T>> data) {
         clear();
         for (List<T> row : data) {
@@ -221,8 +255,17 @@ public class Grid<T> {
         }
     }
 
+    @JsonIgnore
+    public List<List<LinkedCell>> getGrid() {
+        List<List<LinkedCell>> data = new ArrayList<>();
+        for (int y = 0; y < height; y++) {
+            data.add(getRow(y));
+        }
+        return data;
+    }
+
     public T setCell(Point point, T value) {
-        Cell c = getCell(point);
+        LinkedCell c = getCell(point);
         T old = c.value;
         c.value = value;
         return old;
@@ -241,8 +284,8 @@ public class Grid<T> {
     }
 
     public Direction getDirection(Point from, Point to) {
-        Cell c1 = getCell(from);
-        Cell c2 = getCell(to);
+        LinkedCell c1 = getCell(from);
+        LinkedCell c2 = getCell(to);
         if (c1.hasUp() && c1.up.equals(c2)) return Direction.UP;
         if (c1.hasRight() && c1.right.equals(c2)) return Direction.RIGHT;
         if (c1.hasDown() && c1.down.equals(c2)) return Direction.DOWN;
