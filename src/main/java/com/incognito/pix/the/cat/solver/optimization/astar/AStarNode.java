@@ -1,7 +1,6 @@
 package com.incognito.pix.the.cat.solver.optimization.astar;
 
 import java.awt.Point;
-import java.util.Objects;
 
 public class AStarNode {
     private final AStarNode parent;
@@ -42,18 +41,5 @@ public class AStarNode {
 
     public int getF() {
         return g + h;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AStarNode aStarNode = (AStarNode) o;
-        return Objects.equals(p, aStarNode.p);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(p);
     }
 }

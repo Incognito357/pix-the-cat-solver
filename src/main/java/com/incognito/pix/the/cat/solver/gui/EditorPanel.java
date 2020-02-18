@@ -52,7 +52,7 @@ public class EditorPanel extends JPanel implements MouseListener, MouseMotionLis
     private transient LevelSolution solution = null;
     private List<String> levelWarnings = new ArrayList<>();
     private List<String> levelErrors = new ArrayList<>();
-    private int solutionStep;
+    private int solutionStep = -1;
 
     enum ClickMode {
         DRAW,

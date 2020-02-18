@@ -10,33 +10,34 @@ import com.incognito.pix.the.cat.solver.optimization.planning.ExitLocation;
 import com.incognito.pix.the.cat.solver.optimization.planning.LevelSolution;
 import com.incognito.pix.the.cat.solver.optimization.planning.StartLocation;
 import com.incognito.pix.the.cat.solver.optimization.planning.Visit;
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
 public class LevelSolutionFactory {
     private LevelSolutionFactory() {}
 
-    public static LevelSolution create(World world) {
+    public static LevelSolution create(World world, int lvl) {
         LevelSolution solution = new LevelSolution();
-        solution.setWorld(world);
-        Level level = world.get(0);
+        Level level = world.get(Math.max(0, Math.min(world.size() - 1, lvl)));
+        solution.setLevel(level);
         Grid<Cell> grid = level.getGrid();
         int numTargets = 0;
         for (List<Grid<Cell>.LinkedCell> linkedCells : grid.getGrid()) {
             for (Grid<Cell>.LinkedCell linkedCell : linkedCells) {
                 Cell cell = linkedCell.getValue();
                 if (cell.getType() == CellType.PLAYER_START) {
-                    solution.getStarts().add(new StartLocation(linkedCell.getPos(), Direction.NONE));
+                    solution.getStarts().add(new StartLocation(new Point(linkedCell.getPos()), Direction.NONE));
                 } else if (cell.getType() == CellType.EGG) {
-                    solution.getEggs().add(new Visit(linkedCell.getPos(), cell.getType()));
+                    solution.getEggs().add(new Visit(new Point(linkedCell.getPos()), cell.getType()));
                     numTargets++;
                 } else if (cell.getType() == CellType.TARGET) {
-                    solution.getTargets().add(new Visit(linkedCell.getPos(), cell.getType()));
+                    solution.getTargets().add(new Visit(new Point(linkedCell.getPos()), cell.getType()));
                 } else if (cell.getType() == CellType.PORTAL) {
                     if (level.getParentLinks().containsKey(linkedCell.getPos())) {
                         solution.getStarts().add(new StartLocation(linkedCell.getPos(), cell.getDirection()));
-                    } else if (level.getChildLinks().containsKey(linkedCell.getPos())) {
-                        solution.getExits().add(new ExitLocation(linkedCell.getPos(), cell.getDirection()));
+                    } else {//if (level.getChildLinks().containsKey(linkedCell.getPos())) {
+                        solution.getExits().add(new ExitLocation(new Point(linkedCell.getPos()), cell.getDirection()));
                     }
                 }
             }

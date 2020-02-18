@@ -1,6 +1,6 @@
 package com.incognito.pix.the.cat.solver.optimization.planning;
 
-import com.incognito.pix.the.cat.solver.models.World;
+import com.incognito.pix.the.cat.solver.models.Level;
 import java.util.ArrayList;
 import java.util.List;
 import org.optaplanner.core.api.domain.solution.PlanningEntityCollectionProperty;
@@ -35,7 +35,7 @@ public class LevelSolution {
     private List<Visit> path = new ArrayList<>();
 
     @ProblemFactProperty
-    private World world;
+    private Level level;
 
     @ProblemFactProperty
     private int numTargets;
@@ -83,12 +83,12 @@ public class LevelSolution {
         this.path = path;
     }
 
-    public World getWorld() {
-        return world;
+    public Level getLevel() {
+        return level;
     }
 
-    public void setWorld(World world) {
-        this.world = world;
+    public void setLevel(Level level) {
+        this.level = level;
     }
 
     public int getNumTargets() {

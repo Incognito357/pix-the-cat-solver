@@ -52,7 +52,6 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
-import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 import org.optaplanner.core.api.solver.Solver;
 import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig;
@@ -126,11 +125,11 @@ public class Editor extends JFrame {
         module.addKeyDeserializer(Point.class, new PointKeyDeserializer());
         objectMapper.registerModule(module);
 
-//        try (InputStream is = getClass().getClassLoader().getResourceAsStream("test_new.lvl")) {
-//            importWorld(is);
-//        } catch (IOException e) {
-//            logger.error("Could not load default world!", e);
-//        }
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("test_new.lvl")) {
+            importWorld(is);
+        } catch (IOException e) {
+            logger.error("Could not load default world!", e);
+        }
     }
 
     private void createUIComponents() {
@@ -399,17 +398,15 @@ public class Editor extends JFrame {
             Solver<LevelSolution> solver = solverFactory.buildSolver();
             solver.addEventListener(solution -> {
                 logger.info("New best solution found: {}\n\tPath: {}", solution.getNewBestScore(), solution.getNewBestSolution().getPath());
-                if (((HardSoftScore) solution.getNewBestScore()).isFeasible()) {
-                    pnlEditor.setSolution(solution.getNewBestSolution());
-                    SwingUtilities.invokeLater(() -> {
-                        pnlEditor.repaint();
-                        solutionStep.setModel(new SpinnerNumberModel((int) solutionStep.getValue(), -1, solution.getNewBestSolution().getPath().size() - 1, 1));
-                        solutionStep.setEnabled(true);
-                    });
-                }
+                pnlEditor.setSolution(solution.getNewBestSolution());
+                SwingUtilities.invokeLater(() -> {
+                    pnlEditor.repaint();
+                    solutionStep.setModel(new SpinnerNumberModel((int) solutionStep.getValue(), -1, solution.getNewBestSolution().getPath().size() - 1, 1));
+                    solutionStep.setEnabled(true);
+                });
             });
             CompletableFuture<LevelSolution> future = CompletableFuture.supplyAsync(() ->
-                    solver.solve(LevelSolutionFactory.create(world)));
+                    solver.solve(LevelSolutionFactory.create(world, lstLevels.getSelectedIndex())));
             future.whenComplete((solution, ex) -> {
                 if (ex != null) {
                     logger.error("Could not solve", ex);

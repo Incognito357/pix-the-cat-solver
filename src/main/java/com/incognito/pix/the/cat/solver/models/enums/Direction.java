@@ -18,4 +18,9 @@ public enum Direction {
         }
         return Direction.values()[FastMath.floorMod(this.ordinal() - 1, 4)];
     }
+
+    private static final Direction[] CARDINAL = { UP, RIGHT, DOWN, LEFT };
+    public static Direction[] cardinals() {
+        return CARDINAL;
+    }
 }

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -284,6 +285,7 @@ public class Grid<T> {
     }
 
     public Direction getDirection(Point from, Point to) {
+        if (Objects.equals(from, to)) return Direction.NONE;
         LinkedCell c1 = getCell(from);
         LinkedCell c2 = getCell(to);
         if (c1.hasUp() && c1.up.equals(c2)) return Direction.UP;

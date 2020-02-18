@@ -1,5 +1,7 @@
 package com.incognito.pix.the.cat.solver.optimization.planning;
 
+import com.incognito.pix.the.cat.solver.models.Cell;
+import com.incognito.pix.the.cat.solver.models.Grid;
 import com.incognito.pix.the.cat.solver.optimization.astar.AStarSolver;
 import java.awt.Point;
 import java.util.Collections;
@@ -26,11 +28,10 @@ public class ScoreCalculator implements EasyScoreCalculator<LevelSolution> {
                 soft -= dist;
             }
             if (visit.getNextVisit() == null) {
+                Grid<Cell> grid = levelSolution.getLevel().getGrid();
                 for (ExitLocation exit : levelSolution.getExits()) {
-                    AStarSolver solver = new AStarSolver(
-                            levelSolution.getWorld().get(0).getGrid(),
-                            visit.getLocation(), exit.getPoint(), Collections.emptyMap(),
-                            visit.getCollectedEggs(), visit.getCollectedTargets(), false);
+                    AStarSolver solver = new AStarSolver(grid, visit.getLocation(), exit.getPoint(),
+                            Collections.emptyMap(), visit.getCollectedEggs(), visit.getCollectedTargets(), false);
                     List<Point> solution = solver.solve();
                     if (solution.isEmpty()) {
                         hard--;

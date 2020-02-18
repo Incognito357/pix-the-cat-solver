@@ -1,6 +1,7 @@
 package com.incognito.pix.the.cat.solver.optimization.planning;
 
-import com.incognito.pix.the.cat.solver.models.World;
+import com.incognito.pix.the.cat.solver.models.Cell;
+import com.incognito.pix.the.cat.solver.models.Grid;
 import com.incognito.pix.the.cat.solver.models.enums.CellType;
 import com.incognito.pix.the.cat.solver.optimization.astar.AStarSolver;
 import java.awt.Point;
@@ -72,7 +73,7 @@ public class PathVariableListener implements VariableListener<Visit> {
     @Override
     public void afterVariableChanged(ScoreDirector scoreDirector, Visit visit) {
         LevelSolution solution = (LevelSolution) scoreDirector.getWorkingSolution();
-        World world = solution.getWorld();
+        Grid<Cell> grid = solution.getLevel().getGrid();
         Standstill previousStandstill = visit.getPreviousStandstill();
         Map<Point, Integer> previousTail;
         if (previousStandstill == null) {
@@ -81,7 +82,7 @@ public class PathVariableListener implements VariableListener<Visit> {
         }
         Set<Point> eggsCollected;
         Set<Point> targetsCollected;
-        boolean avoidTargets = true;
+        boolean avoidTargets;
         if (previousStandstill instanceof StartLocation) {
             previousTail = Collections.emptyMap();
             if (visit.getCellType() == CellType.EGG) {
@@ -91,6 +92,7 @@ public class PathVariableListener implements VariableListener<Visit> {
                 invalidateChain(scoreDirector, visit);
                 return;
             }
+            avoidTargets = false;
         } else {
             Visit previousVisit = (Visit) previousStandstill;
             if (Boolean.FALSE.equals(previousVisit.getValidPath())) {
@@ -100,14 +102,18 @@ public class PathVariableListener implements VariableListener<Visit> {
             previousTail = previousVisit.getTail();
             eggsCollected = previousVisit.getCollectedEggs();
             targetsCollected = previousVisit.getCollectedTargets();
-            avoidTargets = !previousVisit.getEggsCollected() && previousVisit.getNumCollected() == 0;
+            avoidTargets = !previousVisit.getEggsCollected();
         }
-        astar(scoreDirector, visit, world, previousTail, eggsCollected, targetsCollected, avoidTargets);
+        astar(scoreDirector, visit, grid, previousTail, eggsCollected, targetsCollected, avoidTargets);
         updateHelperStats(scoreDirector, visit, solution, previousStandstill);
+        if (Boolean.FALSE.equals(visit.getValidPath())) {
+            invalidateChain(scoreDirector, visit);
+            return;
+        }
         Visit chain = visit.getNextVisit();
         Visit last = visit;
         while (chain != null) {
-            astar(scoreDirector, chain, world, last.getTail(), last.getCollectedEggs(), last.getCollectedTargets(), !last.getEggsCollected());
+            astar(scoreDirector, chain, grid, last.getTail(), last.getCollectedEggs(), last.getCollectedTargets(), !last.getEggsCollected());
             updateHelperStats(scoreDirector, chain, solution, last);
             if (Boolean.FALSE.equals(chain.getValidPath())) {
                 invalidateChain(scoreDirector, chain);
@@ -130,11 +136,11 @@ public class PathVariableListener implements VariableListener<Visit> {
         }
     }
 
-    private void astar(ScoreDirector scoreDirector, Visit visit, World world, Map<Point, Integer> previousTail,
+    private void astar(ScoreDirector scoreDirector, Visit visit, Grid<Cell> grid, Map<Point, Integer> previousTail,
                        Set<Point> collectedEggs, Set<Point> collectedTargets, boolean avoidTargets) {
         Standstill previousStandstill = visit.getPreviousStandstill();
         AStarSolver solver = new AStarSolver(
-                world.get(0).getGrid(),
+                grid,
                 previousStandstill.getLocation(),
                 visit.getLocation(),
                 previousTail,
@@ -179,7 +185,7 @@ public class PathVariableListener implements VariableListener<Visit> {
     private void updateHelperStats(ScoreDirector scoreDirector, Visit visit, LevelSolution solution, Standstill lastStandstill) {
         if (lastStandstill instanceof StartLocation) {
             updateValid(scoreDirector, visit, visit.getCellType() == CellType.EGG);
-            updateAllEggs(scoreDirector, visit, visit.getCellType() == CellType.EGG && solution.getNumTargets() == 1);
+            updateAllEggs(scoreDirector, visit, solution.getNumTargets() == 1);
             return;
         }
         Visit lastVisit = (Visit)lastStandstill;
